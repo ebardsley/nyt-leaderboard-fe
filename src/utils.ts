@@ -1,25 +1,8 @@
-import {format, toDate, utcToZonedTime} from 'date-fns-tz';
+import {format, toDate} from 'date-fns-tz';
 import memoize from 'fast-memoize';
 
 function formatDate(date: Date): string {
   return format(date, 'yyyy-MM-dd');
-}
-
-export function getLatestPuzzleDate(): string {
-  const date = utcToZonedTime(new Date(), 'America/Los_Angeles');
-  const day = date.getDay();
-  const hours = date.getHours();
-  const isWeekend =
-    day === 6 && hours >= 15 ||
-    day === 0 ||
-    day === 1 && hours < 15;
-
-  const weekdayHourOffset = 5; // Releases 7pm PT
-  const weekendHourOffset = 9; // Releases 3pm PT
-  const hourOffset = isWeekend ? weekendHourOffset : weekdayHourOffset;
-  date.setHours(date.getHours() + hourOffset);
-
-  return formatDate(date);
 }
 
 export const getOffsetDate = memoize((dateString: string, offset: number): string => {

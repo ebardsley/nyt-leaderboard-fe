@@ -4,7 +4,8 @@ import styled from 'styled-components';
 import {Suspense} from 'react';
 import {useRouter} from 'next/router';
 
-import {getLatestPuzzleDate} from 'utils';
+import { getLatestPuzzleDate } from 'data';
+import { toReadableDate } from 'utils';
 
 const Container = styled.div`
   display: flex;
@@ -57,6 +58,11 @@ const Logo = styled.img`
 const MessageContainer = styled.div`
   padding: 30px;
   text-align: center;
+`;
+
+const DateHeading = styled.h3`
+  font: 16px 'NYT-Franklin', sans-serif;
+  margin: 0;
 `;
 
 interface StyledLinkProps {
@@ -112,14 +118,14 @@ interface LayoutProps {
   title: string;
 }
 
-function Layout({children, title}: LayoutProps) {
+function Layout({ children, title }: LayoutProps) {
+  const date = getLatestPuzzleDate();
   return (
     <>
       <Head>
         <meta name="description" content="Leaderboard for the NYT mini" />
         <title>{title}</title>
         <link rel="icon" href="/favicon.ico" />
-        <link rel="preconnect" href="https://firestore.googleapis.com" />
       </Head>
 
       <Header>
@@ -128,13 +134,18 @@ function Layout({children, title}: LayoutProps) {
             <Logo src="/logo.svg" alt="NYT Crossword Stats" />
           </a>
         </Link>
+        <MessageContainer>
+          <DateHeading>
+            as of {toReadableDate(date)}
+          </DateHeading>
+        </MessageContainer>
         <nav>
           <NavLink href="/">
             Statistics
           </NavLink>
           <NavLink
             href="/leaderboard/[date]"
-            as={`/leaderboard/${getLatestPuzzleDate()}`}
+            as={`/leaderboard/${date}`}
           >
             Leaderboards
           </NavLink>

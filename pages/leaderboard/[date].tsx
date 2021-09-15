@@ -1,12 +1,15 @@
 import Link from 'next/link';
 import styled from 'styled-components';
 import {useRouter} from 'next/router';
+import { GetStaticProps } from 'next'
+
 
 import Heading from 'Heading';
-import Layout, {FixedContainer, MessageContainer} from 'Layout';
+import Layout, { FixedContainer, MessageContainer } from 'Layout';
+// import LinkHoc from 'LinkHoc';
 import RankedList from 'RankedList';
 import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
-import {usePuzzleLeaderboard} from 'data';
+import {getLatestPuzzleDate, usePuzzleLeaderboard, usePuzzleResults} from 'data';
 
 const Button = styled.button`
   background-color: #fff;
@@ -34,6 +37,16 @@ const StyledNextButton = styled(Button)`
   width: 40px;
 `;
 
+const DisabledNextButton = styled(Button)`
+  font-size: 0;
+  height: 40px;
+  width: 40px;
+  cursor: auto;
+  &:hover {
+    background-color: #fff;
+  }
+`;
+
 const StyledPrevButton = styled(StyledNextButton)`
   transform: scaleX(-1);
 `;
@@ -43,6 +56,11 @@ interface DateButtonProps {
 }
 
 function NextButton({date}: DateButtonProps) {
+  if (date == getLatestPuzzleDate()) {
+    return (
+      <DisabledNextButton>Next Leaderboard</DisabledNextButton>
+    )
+  }
   return (
     <Link href="/leaderboard/[date]" as={`/leaderboard/${getOffsetDate(date, 1)}`} passHref>
       <StyledNextButton>Next Leaderboard</StyledNextButton>
@@ -87,6 +105,24 @@ function PuzzleLeaderboard({date}: PuzzleLeaderboardProps) {
       <RankedList list={formattedLeaderboard} />
     </FixedContainer>
   );
+}
+
+export const getStaticProps: GetStaticProps = async (context) => {
+  const data = usePuzzleResults();
+  return {
+    props: { data, }, // will be passed to the page component as props
+  }
+}
+
+export async function getStaticPaths() {
+  const results = usePuzzleResults();
+  const ret = {
+    paths: results.map(x => {
+      return { params: { date: x.date } }
+    }),
+    fallback: false
+  };
+  return ret;
 }
 
 function LeaderboardPage() {

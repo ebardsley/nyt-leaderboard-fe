@@ -3,10 +3,10 @@ import styled from 'styled-components';
 import {useRouter} from 'next/router';
 
 import Heading from 'Heading';
-import Layout, {Container, MessageContainer} from 'Layout';
+import Layout, {Container, FixedContainer, MessageContainer} from 'Layout';
 import RankedList, {RankedListItem} from 'RankedList';
-import {getLatestPuzzleDate, getOffsetDate, secondsToMinutes} from 'utils';
-import {Period, PlayerResults, PuzzleResult, useLeaderboard, usePuzzleResults} from 'data';
+import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
+import {Period, PlayerResults, PuzzleResult, getLatestPuzzleDate, useLeaderboard, usePuzzleResults} from 'data';
 
 interface PillProps {
   isActive: boolean;
@@ -381,10 +381,14 @@ function StatsSection({periodDays}: StatsProps) {
 
 function Home() {
   const {period} = useRouter().query;
-  const periodString = Array.isArray(period) ? period[0]: period;
+  const periodString = Array.isArray(period) ? period[0] : period;
+  const date = getLatestPuzzleDate();
 
   return (
     <Layout title="NYT Crossword Stats">
+      &nbsp;
+      {/* <Heading heading="Statistics" subHeading={toReadableDate(date)} /> */}
+      {/* <SubHeading>{toReadableDate(date)}</SubHeading> */}
       <Filters>
         <PeriodFilter href="/?period=7" isActive={periodString === '7'} title="Last 7 days" />
         <PeriodFilter href="/?period=30" isActive={periodString === '30'} title="Last 30 days" />

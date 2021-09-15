@@ -1,9 +1,10 @@
 module.exports = {
   experimental: {
     modern: true,
-    reactMode: 'concurrent',
+    reactRoot: 'concurrent',
     reactStrictMode: true,
   },
+  trailingSlash: true,
   typescript: {
     ignoreDevErrors: true,
   },

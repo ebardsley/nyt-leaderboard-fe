@@ -1,7 +1,4 @@
-import {
-  useFirestore,
-  useFirestoreCollectionData,
-} from 'reactfire';
+import data from './nytxw-combined.json'
 
 interface ObjWithDate {
   date: string;
@@ -21,12 +18,17 @@ export interface PlayerResults {
   results: PlayerResult[];
 }
 
-export function useLeaderboard(period?: Period): PlayerResults[] {
-  const ref = useFirestore()
-    .collection('leaderboard')
-    .orderBy('name');
+export function getLatestPuzzleDate(): string {
+  const results: PuzzleResult[] = usePuzzleResults();
+  if (!results) {
+    return '';
+  }
+  return results.sort(compareDateDescending)[0].date;
+}
 
-  const leaderboard: PlayerResults[] = useFirestoreCollectionData(ref);
+
+export function useLeaderboard(period?: Period): PlayerResults[] {
+  const leaderboard: PlayerResults[] = data;
 
   return leaderboard.map(({name, results}) => {
     const filtered = period ? results.filter(({date}) => (
@@ -43,21 +45,6 @@ export function useLeaderboard(period?: Period): PlayerResults[] {
 interface PlayerResult {
   date: string;
   time: number;
-}
-
-export function usePlayerResults(name: string, period?: Period): PlayerResult[] {
-  const ref = useFirestore()
-    .collection('leaderboard')
-    .where("name", "==", name)
-
-  const leaderboard: PlayerResults[] = useFirestoreCollectionData(ref);
-  const results = leaderboard[0]?.results;
-
-  if (!period) {
-    return results;
-  }
-
-  return results.filter(({date}) => date >= period.start && date <= period.end);
 }
 
 interface PuzzleLeaderboardTime {
