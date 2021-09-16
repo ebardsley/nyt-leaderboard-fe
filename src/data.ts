@@ -42,7 +42,7 @@ export function useLeaderboard(period?: Period): PlayerResults[] {
   });
 }
 
-interface PlayerResult {
+export interface PlayerResult {
   date: string;
   time: number;
 }

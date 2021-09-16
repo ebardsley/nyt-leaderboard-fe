@@ -6,7 +6,7 @@ import Heading from 'Heading';
 import Layout, {Container, FixedContainer, MessageContainer} from 'Layout';
 import RankedList, {RankedListItem} from 'RankedList';
 import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
-import {Period, PlayerResults, PuzzleResult, getLatestPuzzleDate, useLeaderboard, usePuzzleResults} from 'data';
+import {Period, PlayerResult, PlayerResults, PuzzleResult, getLatestPuzzleDate, useLeaderboard, usePuzzleResults} from 'data';
 
 interface PillProps {
   isActive: boolean;
@@ -193,16 +193,24 @@ function CurrentStreak({leaderboard}: StatProps) {
 }
 
 function FastestTimes({leaderboard}: StatProps) {
-  const list = leaderboard.map(({name, results}) => ({
-    name,
-    result: results.reduce(
-      (fastest, {time}) => Math.min(time, fastest),
-      Infinity,
-    ),
-  })).sort(compareResultsAscending)
-    .map(({name, result}) => ({
+  const list = leaderboard.map(({ name, results }) => {
+    const r = results.sort((a, b) => (a.time - b.time));
+    const fastest: PlayerResult = r.length ? r[0] : { date: "", time: Infinity };
+    return {
+      name,
+      result: fastest.time,
+      date: fastest.date,
+    }
+  }).sort(compareResultsAscending)
+    .map(({name, result, date}) => ({
       name,
       result: isFinite(result) ? secondsToMinutes(result) : null,
+      link: isFinite(result) ? (
+        <Link
+          href="/leaderboard/[date]"
+          as={`/leaderboard/${date}`}
+        >{secondsToMinutes(result)}</Link>
+      ) : null,
     }));
 
   return <Stat list={list} title="Fastest Solve Time" />;
@@ -326,16 +334,24 @@ function PuzzlesWon({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
 }
 
 function SlowestTimes({leaderboard}: StatProps) {
-  const list = leaderboard.map(({name, results}) => ({
-    name,
-    result: results.reduce(
-      (slowest, {time}) => Math.max(time, slowest),
-      0,
-    ),
-  })).sort(compareResultsDescending)
-    .map(({name, result}) => ({
+  const list = leaderboard.map(({ name, results }) => {
+    const r = results.sort((a, b) => (b.time - a.time));
+    const slowest: PlayerResult = r.length ? r[0] : { date: "", time: 0 };
+    return {
+      name,
+      result: slowest.time,
+      date: slowest.date,
+    }
+  }).sort(compareResultsDescending)
+    .map(({name, result, date}) => ({
       name,
       result: result > 0 ? secondsToMinutes(result) : null,
+      link: result > 0 ? (
+        <Link
+          href="/leaderboard/[date]"
+          as={`/leaderboard/${date}`}
+        >{secondsToMinutes(result)}</Link>
+      ) : null,
     }));
 
   return <Stat list={list} title="Slowest Solve Time" />;

@@ -16,6 +16,19 @@ const Name = styled.span`
   padding: 12px 0;
 `;
 
+const Result = styled.span`
+  text-decoration: none;
+  a:link {
+    color: #000;
+  }
+  a:visited {
+    color: #000;
+  }
+  a:hover {
+    color: #787886;
+  }
+`;
+
 const Rank = styled.span`
   font-family: 'NYT-KarnakCondensed', serif;
   width: 30px;
@@ -30,6 +43,7 @@ type Result = number | string | null;
 export interface RankedListItem {
   name: string;
   result: Result;
+  link?: any | undefined;
 }
 
 interface RankedListProps {
@@ -40,13 +54,13 @@ function RankedList({list}: RankedListProps) {
   let lastRank = 0;
   let lastResult: Result = null;
 
-  const listItems = list.map(({name, result}) => {
+  const listItems = list.map(({name, result, link}) => {
     if (result == null) {
       return (
         <UnrankedItem key={name}>
           <Rank>•</Rank>
           <Name>{name}</Name>
-          <span>--</span>
+          <Result>--</Result>
         </UnrankedItem>
       );
     }
@@ -58,7 +72,7 @@ function RankedList({list}: RankedListProps) {
       <ListItem key={name}>
         <Rank>{rank}</Rank>
         <Name>{name}</Name>
-        <span>{result}</span>
+        <Result>{link != null ? link : result}</Result>
       </ListItem>
     );
   });
