@@ -55,22 +55,29 @@ interface DateButtonProps {
   date: string;
 }
 
-function NextButton({date}: DateButtonProps) {
-  if (date == getLatestPuzzleDate()) {
+function NextButton({ date }: DateButtonProps) {
+  const next = getOffsetDate(date, 1);
+  if (!next || next == "") {
     return (
       <DisabledNextButton>Next Leaderboard</DisabledNextButton>
     )
   }
   return (
-    <Link href="/leaderboard/[date]" as={`/leaderboard/${getOffsetDate(date, 1)}`} passHref>
+    <Link href="/leaderboard/[date]" as={`/leaderboard/${next}`} passHref>
       <StyledNextButton>Next Leaderboard</StyledNextButton>
     </Link>
   );
 }
 
-function PrevButton({date}: DateButtonProps) {
+function PrevButton({ date }: DateButtonProps) {
+  const prev = getOffsetDate(date, -1);
+  if (!prev || prev == "") {
+    return (
+      <DisabledNextButton>Previous Leaderboard</DisabledNextButton>
+    )
+  }
   return (
-    <Link href="/leaderboard/[date]" as={`/leaderboard/${getOffsetDate(date, -1)}`} passHref>
+    <Link href="/leaderboard/[date]" as={`/leaderboard/${prev}`} passHref>
       <StyledPrevButton>Previous Leaderboard</StyledPrevButton>
     </Link>
   );

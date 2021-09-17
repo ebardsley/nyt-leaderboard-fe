@@ -1,3 +1,5 @@
+import memoize from 'fast-memoize';
+
 import data from './nytxw-combined.json'
 
 interface ObjWithDate {
@@ -102,3 +104,26 @@ export function usePuzzleResults(period?: Period): PuzzleResult[] {
     }),
   })).sort(compareDateDescending);
 }
+
+interface DateInfo {
+  prev: string;
+  next: string;
+}
+
+interface DateOrder {
+  dates: Map<string, DateInfo>;
+}
+
+export const useDateOrder = memoize((period?: Period): DateOrder => {
+  const dates: Map<string, DateInfo> = new Map();
+  const results = usePuzzleResults(period);  // descending order of date
+  for (let i = 0; i < results.length; i++) {
+    dates.set(results[i].date, {
+      next: i > 0 ? results[i - 1].date : "",
+      prev: i < results.length - 1 ? results[i + 1].date : "",
+    })
+  }
+  return {
+    dates: dates,
+  }
+});
