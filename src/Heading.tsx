@@ -31,7 +31,7 @@ interface HeadingProps {
 function Heading({heading, subHeading}: HeadingProps) {
   return (
     <HeadingGroup>
-      <GameHeading>The Mini Crossword</GameHeading>
+      {/* <GameHeading>The Mini Crossword</GameHeading> */}
       <StyledHeading>{heading}</StyledHeading>
       {subHeading && <SubHeading>{subHeading}</SubHeading>}
     </HeadingGroup>

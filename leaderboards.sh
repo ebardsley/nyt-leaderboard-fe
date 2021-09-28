@@ -4,7 +4,7 @@ set -e
 
 cd "$(dirname "$0")"
 pushd ../nytxw/
-./leaderboards.sh
+if [[ -z "${AGG_ONLY:-}" ]]; then ./leaderboards.sh; fi
 
 direnv exec . ./aggregate.py ../nyt-leaderboard-fe/src/nytxw-combined.json *.pson
 

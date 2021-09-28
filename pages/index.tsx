@@ -68,12 +68,13 @@ function PeriodFilter({href, isActive, title}: PeriodFilterProps) {
 interface StatContainerProps {
   list: RankedListItem[];
   title: string;
+  subTitle?: string;
 }
 
-function Stat({list, title}: StatContainerProps) {
+function Stat({list, title, subTitle}: StatContainerProps) {
   return (
     <StatContainer>
-      <Heading heading={title} />
+      <Heading heading={title} subHeading={subTitle}/>
       <RankedList list={list} />
     </StatContainer>
   );
@@ -357,6 +358,80 @@ function SlowestTimes({leaderboard}: StatProps) {
   return <Stat list={list} title="Slowest Solve Time" />;
 }
 
+function OverallPoints({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
+  const ranks: Map<string, number[]> = new Map();
+
+  for (const {name} of leaderboard) {
+    ranks.set(name, []);
+  }
+
+  for (const {results} of puzzleResults) {
+    let lastRank = 0;
+    let lastTime;
+    let pointsAwarded = 0
+    let pointsPending = 0;
+
+    for (const {name, time} of results.slice(0).reverse()) {
+      if (time !== lastTime) {
+        pointsAwarded += pointsPending;
+        pointsPending = 0;
+      }
+      lastTime = time;
+
+      const playerRanks = ranks.get(name);
+      if (playerRanks) {
+        playerRanks.push(pointsAwarded);
+      }
+
+      ++pointsPending;
+    }
+  }
+
+  const list = Array.from(ranks).map(([name, points]) => ({
+    name,
+    result: points.reduce((a, b) => a + b, 0),
+  })).sort(compareResultsDescending);
+
+  return <Stat list={list} title="Overall Points" subTitle="1 point per person outranked"/>
+}
+
+function Pokerstars({ leaderboard, puzzleResults }: PuzzleResultsStatProps) {
+  /*
+  From https://www.pokerstars.com/poker/tournaments/leader-board/explained/ (cached)
+  Points = 10 * [sqrt(n)/sqrt(k)] * [1+log(b+0.25)]
+  n is the number of entrants
+  k is the place of finish (k=1 for the first-place finisher, and so on)
+  b is the buy-in amount in US Dollars
+  */
+  const ranks: Map<string, number> = new Map();
+
+  for (const {results} of puzzleResults) {
+    let lastRank = 0;
+    let lastTime;
+
+    for (const {name, time} of results) {
+      const rank = time === lastTime ? lastRank : ++lastRank;
+      lastTime = time;
+
+      const playerRank = ranks.get(name) || 0;
+      ranks.set(name, playerRank + (
+        10.0 * Math.sqrt(results.length) / Math.sqrt(rank) *
+        (1 + Math.log10(0.25))
+      ));
+    }
+  }
+
+  const list = Array.from(ranks).map(([name, points]) => ({
+    name,
+    result: points,
+  })).sort(compareResultsDescending).map(({ name, result }) => ({
+    name,
+    result: result.toFixed(2),
+  }));
+
+  return <Stat list={list} title="P* Tournament Points" subTitle="10*sqrt(entrants)/sqrt(rank)*(1 + log(0.25))"/>
+}
+
 interface StatsProps {
   periodDays: string | undefined;
 }
@@ -391,6 +466,8 @@ function StatsSection({periodDays}: StatsProps) {
       <MedianRanks leaderboard={leaderboard} puzzleResults={puzzleResults}/>
       <FastestTimes leaderboard={leaderboard} />
       <SlowestTimes leaderboard={leaderboard} />
+      <OverallPoints leaderboard={leaderboard} puzzleResults={puzzleResults} />
+      <Pokerstars leaderboard={leaderboard} puzzleResults={puzzleResults} />
     </Container>
   );
 }
