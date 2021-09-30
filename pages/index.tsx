@@ -456,16 +456,16 @@ function StatsSection({periodDays}: StatsProps) {
 
   return (
     <Container>
-      <CurrentStreak leaderboard={leaderboard} />
-      <LongestStreak leaderboard={leaderboard} />
       <PuzzlesWon leaderboard={leaderboard} puzzleResults={puzzleResults} />
       <NumberSolved leaderboard={leaderboard} />
+      <LongestStreak leaderboard={leaderboard} />
+      <CurrentStreak leaderboard={leaderboard} />
       <AverageTimes leaderboard={leaderboard} />
       <MedianTimes leaderboard={leaderboard} />
-      <AverageRanks leaderboard={leaderboard} puzzleResults={puzzleResults}/>
-      <MedianRanks leaderboard={leaderboard} puzzleResults={puzzleResults}/>
       <FastestTimes leaderboard={leaderboard} />
       <SlowestTimes leaderboard={leaderboard} />
+      <AverageRanks leaderboard={leaderboard} puzzleResults={puzzleResults}/>
+      <MedianRanks leaderboard={leaderboard} puzzleResults={puzzleResults}/>
       <OverallPoints leaderboard={leaderboard} puzzleResults={puzzleResults} />
       <Pokerstars leaderboard={leaderboard} puzzleResults={puzzleResults} />
     </Container>
@@ -479,7 +479,6 @@ function Home() {
 
   return (
     <Layout title="NYT Crossword Stats">
-      &nbsp;
       {/* <Heading heading="Statistics" subHeading={toReadableDate(date)} /> */}
       {/* <SubHeading>{toReadableDate(date)}</SubHeading> */}
       <Filters>

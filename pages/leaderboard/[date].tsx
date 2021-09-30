@@ -6,10 +6,9 @@ import { GetStaticProps } from 'next'
 
 import Heading from 'Heading';
 import Layout, { FixedContainer, MessageContainer } from 'Layout';
-// import LinkHoc from 'LinkHoc';
 import RankedList from 'RankedList';
 import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
-import {getLatestPuzzleDate, usePuzzleLeaderboard, usePuzzleResults} from 'data';
+import {getFirstPuzzleDate, getLatestPuzzleDate, usePuzzleLeaderboard, usePuzzleResults} from 'data';
 
 const Button = styled.button`
   background-color: #fff;
@@ -27,7 +26,10 @@ const Header = styled.div`
   justify-content: space-between;
 `;
 
-const StyledNextButton = styled(Button)`
+const StyledArrow = styled(Button).attrs((props: {
+  reversed: boolean,
+  disabled: boolean,
+}) => props)`
   background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIwLjEuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxMCAxNiIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTAgMTY7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDpub25lO3N0cm9rZTojOTU5NTk1O3N0cm9rZS13aWR0aDoyO30KPC9zdHlsZT4KPHBhdGggY2xhc3M9InN0MCIgZD0iTTEsMTUuMUw4LjEsOEwxLDAuOSIvPgo8L3N2Zz4K);
   background-position: 54%;
   background-repeat: no-repeat;
@@ -35,20 +37,21 @@ const StyledNextButton = styled(Button)`
   font-size: 0;
   height: 40px;
   width: 40px;
+  ${props => props.reversed && `
+    transform: scaleX(-1);
+  `}
+  ${props => props.disabled && `
+    opacity: 0.3;
+    cursor: default;
+    &:hover {
+      background-color: #fff;
+    }
+  `}
 `;
 
-const DisabledNextButton = styled(Button)`
-  font-size: 0;
-  height: 40px;
-  width: 40px;
-  cursor: auto;
-  &:hover {
-    background-color: #fff;
-  }
-`;
-
-const StyledPrevButton = styled(StyledNextButton)`
-  transform: scaleX(-1);
+const StyledDoubleArrow = styled(StyledArrow)`
+  background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIwLjEuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxNSAxNiIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTAgMTY7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDpub25lO3N0cm9rZTojOTU5NTk1O3N0cm9rZS13aWR0aDoyO30KPC9zdHlsZT4KPHBhdGggY2xhc3M9InN0MCIgZD0iTTEsMTUuMUw4LjEsOEwxLDAuOSIvPgo8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNiwxNS4xTDEzLjEsOEw2LDAuOSIvPgo8L3N2Zz4K);
+  background-size: 16px;
 `;
 
 interface DateButtonProps {
@@ -59,13 +62,21 @@ function NextButton({ date }: DateButtonProps) {
   const next = getOffsetDate(date, 1);
   if (!next || next == "") {
     return (
-      <DisabledNextButton>Next Leaderboard</DisabledNextButton>
+      <span>
+        <StyledArrow disabled={true}>Next Leaderboard</StyledArrow>
+        <StyledDoubleArrow disabled={true}>Latest Leaderboard</StyledDoubleArrow>
+      </span>
     )
   }
   return (
-    <Link href="/leaderboard/[date]" as={`/leaderboard/${next}`} passHref>
-      <StyledNextButton>Next Leaderboard</StyledNextButton>
-    </Link>
+    <span>
+      <Link href="/leaderboard/[date]" as={`/leaderboard/${next}`} passHref>
+        <StyledArrow>Next Leaderboard</StyledArrow>
+      </Link>
+      <Link href="/leaderboard/[date]" as={`/leaderboard/${getLatestPuzzleDate()}`} passHref>
+        <StyledDoubleArrow>Latest Leaderboard</StyledDoubleArrow>
+      </Link>
+    </span>
   );
 }
 
@@ -73,13 +84,21 @@ function PrevButton({ date }: DateButtonProps) {
   const prev = getOffsetDate(date, -1);
   if (!prev || prev == "") {
     return (
-      <DisabledNextButton>Previous Leaderboard</DisabledNextButton>
+      <span>
+        <StyledDoubleArrow reversed={true} disabled={true}>Earliest Leaderboard</StyledDoubleArrow>
+        <StyledArrow reversed={true} disabled={true}>Previous Leaderboard</StyledArrow>
+      </span>
     )
   }
   return (
-    <Link href="/leaderboard/[date]" as={`/leaderboard/${prev}`} passHref>
-      <StyledPrevButton>Previous Leaderboard</StyledPrevButton>
-    </Link>
+    <span>
+      <Link href="/leaderboard/[date]" as={`/leaderboard/${getFirstPuzzleDate()}`} passHref>
+        <StyledDoubleArrow reversed={true}>Earliest Leaderboard</StyledDoubleArrow>
+      </Link>
+      <Link href="/leaderboard/[date]" as={`/leaderboard/${prev}`} passHref>
+        <StyledArrow reversed={true}>Previous Leaderboard</StyledArrow>
+      </Link>
+    </span>
   );
 }
 

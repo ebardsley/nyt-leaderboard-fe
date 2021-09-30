@@ -20,6 +20,14 @@ export interface PlayerResults {
   results: PlayerResult[];
 }
 
+export function getFirstPuzzleDate(): string {
+  const results: PuzzleResult[] = usePuzzleResults();
+  if (!results) {
+    return '';
+  }
+  return results.sort(compareDateDescending)[results.length-1].date;
+}
+
 export function getLatestPuzzleDate(): string {
   const results: PuzzleResult[] = usePuzzleResults();
   if (!results) {
@@ -27,7 +35,6 @@ export function getLatestPuzzleDate(): string {
   }
   return results.sort(compareDateDescending)[0].date;
 }
-
 
 export function useLeaderboard(period?: Period): PlayerResults[] {
   const leaderboard: PlayerResults[] = data;

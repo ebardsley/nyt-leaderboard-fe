@@ -41,9 +41,6 @@ const Header = styled.header`
     flex-direction: column;
     left: 0;
     padding-top: 12px;
-    position: fixed;
-    top: 0;
-    z-index: 1;
   }
 `;
 
