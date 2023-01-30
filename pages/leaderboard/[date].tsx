@@ -1,65 +1,28 @@
 import Link from 'next/link';
-import styled from 'styled-components';
-import {useRouter} from 'next/router';
-import { GetStaticProps } from 'next'
-
+import {GetStaticProps} from 'next'
 
 import Heading from 'Heading';
-import Layout, { FixedContainer, MessageContainer } from 'Layout';
+import Layout, {
+  FixedContainer,
+  MessageContainer,
+  BoardHeader,
+  StyledArrow,
+  StyledDoubleArrow
+} from 'Layout';
 import RankedList from 'RankedList';
 import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
-import {getFirstPuzzleDate, getLatestPuzzleDate, usePuzzleLeaderboard, usePuzzleResults} from 'data';
-
-const Button = styled.button`
-  background-color: #fff;
-  border: 1px solid #ccc;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #f4f4f4;
-  }
-`;
-
-const Header = styled.div`
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-`;
-
-const StyledArrow = styled(Button).attrs((props: {
-  reversed: boolean,
-  disabled: boolean,
-}) => props)`
-  background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIwLjEuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxMCAxNiIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTAgMTY7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDpub25lO3N0cm9rZTojOTU5NTk1O3N0cm9rZS13aWR0aDoyO30KPC9zdHlsZT4KPHBhdGggY2xhc3M9InN0MCIgZD0iTTEsMTUuMUw4LjEsOEwxLDAuOSIvPgo8L3N2Zz4K);
-  background-position: 54%;
-  background-repeat: no-repeat;
-  background-size: 11px;
-  font-size: 0;
-  height: 40px;
-  width: 40px;
-  ${props => props.reversed && `
-    transform: scaleX(-1);
-  `}
-  ${props => props.disabled && `
-    opacity: 0.3;
-    cursor: default;
-    &:hover {
-      background-color: #fff;
-    }
-  `}
-`;
-
-const StyledDoubleArrow = styled(StyledArrow)`
-  background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIwLjEuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxNSAxNiIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTAgMTY7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDpub25lO3N0cm9rZTojOTU5NTk1O3N0cm9rZS13aWR0aDoyO30KPC9zdHlsZT4KPHBhdGggY2xhc3M9InN0MCIgZD0iTTEsMTUuMUw4LjEsOEwxLDAuOSIvPgo8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNiwxNS4xTDEzLjEsOEw2LDAuOSIvPgo8L3N2Zz4K);
-  background-size: 16px;
-`;
+import {
+  DataByPlayer, PuzzleLeaderboardTime,
+  getFirstPuzzleDate, getLatestPuzzleDate, leaderboardForDate, dataByDate
+} from 'data';
+import {loadData} from 'static-utils';
 
 interface DateButtonProps {
-  date: string;
+  date: LeaderboardDate;
 }
 
 function NextButton({ date }: DateButtonProps) {
-  const next = getOffsetDate(date, 1);
+  const next = date.next;
   if (!next || next == "") {
     return (
       <span>
@@ -73,7 +36,7 @@ function NextButton({ date }: DateButtonProps) {
       <Link href="/leaderboard/[date]" as={`/leaderboard/${next}`} passHref>
         <StyledArrow>Next Leaderboard</StyledArrow>
       </Link>
-      <Link href="/leaderboard/[date]" as={`/leaderboard/${getLatestPuzzleDate()}`} passHref>
+      <Link href="/leaderboard/[date]" as={`/leaderboard/latest`} passHref>
         <StyledDoubleArrow>Latest Leaderboard</StyledDoubleArrow>
       </Link>
     </span>
@@ -81,7 +44,7 @@ function NextButton({ date }: DateButtonProps) {
 }
 
 function PrevButton({ date }: DateButtonProps) {
-  const prev = getOffsetDate(date, -1);
+  const prev = date.previous;
   if (!prev || prev == "") {
     return (
       <span>
@@ -92,7 +55,7 @@ function PrevButton({ date }: DateButtonProps) {
   }
   return (
     <span>
-      <Link href="/leaderboard/[date]" as={`/leaderboard/${getFirstPuzzleDate()}`} passHref>
+      <Link href="/leaderboard/[date]" as={`/leaderboard/${date.first}`} passHref>
         <StyledDoubleArrow reversed={true}>Earliest Leaderboard</StyledDoubleArrow>
       </Link>
       <Link href="/leaderboard/[date]" as={`/leaderboard/${prev}`} passHref>
@@ -102,20 +65,11 @@ function PrevButton({ date }: DateButtonProps) {
   );
 }
 
-interface PuzzleLeaderboardProps {
-  date: string | undefined;
-}
-
-function PuzzleLeaderboard({date}: PuzzleLeaderboardProps) {
-  if (date == null) {
-    return null;
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+function PuzzleLeaderboard({date, leaderboard}: LeaderboardPageProps) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date.current)) {
     return <MessageContainer>Invalid date</MessageContainer>;
   }
 
-  const leaderboard = usePuzzleLeaderboard(date);
   const formattedLeaderboard = leaderboard.map(({name, time}) => ({
     name,
     result: time && secondsToMinutes(time),
@@ -123,43 +77,75 @@ function PuzzleLeaderboard({date}: PuzzleLeaderboardProps) {
 
   return (
     <FixedContainer>
-      <Header>
+      <BoardHeader>
         <PrevButton date={date} />
-        <Heading heading="Your Leaderboard" subHeading={toReadableDate(date)} />
+        <Heading heading="Your Leaderboard" subHeading={toReadableDate(date.current)} />
         <NextButton date={date} />
-      </Header>
+      </BoardHeader>
       <RankedList list={formattedLeaderboard} />
     </FixedContainer>
   );
 }
 
 export const getStaticProps: GetStaticProps = async (context) => {
-  const data = usePuzzleResults();
+  if (!context || !context.params || !context.params.date) {
+    return {
+      props: {},
+    }
+  }
+
+  const byPlayer: DataByPlayer = loadData();
+  const byDate = dataByDate(byPlayer);
+  const {date} = context.params;
+  let dateString = Array.isArray(date) ? date[0] : date;
+
+  if (dateString == "latest") {
+    dateString = getLatestPuzzleDate(byDate);
+  }
+
   return {
-    props: { data, }, // will be passed to the page component as props
+    props: {
+      date: {
+        first: getFirstPuzzleDate(byDate),
+        previous: getOffsetDate(byDate, dateString, -1),
+        current: dateString,
+        next: getOffsetDate(byDate, dateString, 1),
+      },
+      leaderboard: leaderboardForDate(dateString, byPlayer),
+    },
   }
 }
 
 export async function getStaticPaths() {
-  const results = usePuzzleResults();
+  const results = dataByDate(loadData());
   const ret = {
     paths: results.map(x => {
       return { params: { date: x.date } }
-    }),
+    }).concat([{
+      params: { date: "latest" }
+    }]),
     fallback: false
   };
   return ret;
 }
 
-function LeaderboardPage() {
-  const {date} = useRouter().query;
-  const dateString = Array.isArray(date) ? date[0]: date;
+interface LeaderboardDate {
+  current: string;
+  first: string;
+  previous: string;
+  next: string;
+  latest: string;
+}
 
+interface LeaderboardPageProps {
+  date: LeaderboardDate;
+  leaderboard: PuzzleLeaderboardTime[];
+}
+
+export default function LeaderboardPage({ date, leaderboard }: LeaderboardPageProps) {
   return (
-    <Layout title={`${dateString ?? ''} Leaderboard`}>
-      <PuzzleLeaderboard date={dateString} />
+    <Layout title={`${date.current ?? ''} Leaderboard`}>
+      <PuzzleLeaderboard date={date} leaderboard={leaderboard} />
     </Layout>
   );
 }
-
-export default LeaderboardPage;

@@ -1,16 +1,25 @@
+import { GetStaticProps } from 'next'
 import Link from 'next/link';
 import styled from 'styled-components';
 import {useRouter} from 'next/router';
 
 import Heading from 'Heading';
-import Layout, {Container, FixedContainer, MessageContainer} from 'Layout';
-import RankedList, {RankedListItem} from 'RankedList';
+import Layout, {Container, MessageContainer} from 'Layout';
+import RankedList, { RankedListItem } from 'RankedList';
+import {loadData} from 'static-utils';
 import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
-import {Period, PlayerResult, PlayerResults, PuzzleResult, getLatestPuzzleDate, useLeaderboard, usePuzzleResults} from 'data';
+import {
+  DataByPlayer, PlayerResult, getLatestPuzzleDate, dataForPeriod, dataByDate, DataByDate
+} from 'data';
 
 interface PillProps {
   isActive: boolean;
 }
+
+const DateHeading = styled.h3`
+  font: 16px 'NYT-Franklin', sans-serif;
+  margin: 0;
+`;
 
 const Pill = styled.a<PillProps>`
   background: ${({isActive}) => isActive ? '#000': '#fff'};
@@ -108,25 +117,16 @@ function compareResultsDescending(a: Result, b: Result): number {
   return compareResults(a, b, (x, y) => y - x);
 }
 
-interface StatProps {
-  leaderboard: PlayerResults[];
-}
-
-interface PuzzleResultsStatProps {
-  leaderboard: PlayerResults[];
-  puzzleResults: PuzzleResult[];
-}
-
-function AverageRanks({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
+function AverageRanks(byPlayer: DataByPlayer, byDate: DataByDate) {
   const gamesPlayed = new Map();
   const summedRanks = new Map();
 
-  for (const {name} of leaderboard) {
+  for (const {name} of byPlayer) {
     gamesPlayed.set(name, 0);
     summedRanks.set(name, 0);
   }
 
-  for (const {results} of puzzleResults) {
+  for (const {results} of byDate) {
     let lastRank = 0;
     let lastTime;
 
@@ -148,11 +148,11 @@ function AverageRanks({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
       result: isNaN(result) ? null : result.toFixed(2),
     }));
 
-  return <Stat list={list} title="Average Rank" />
+  return list;
 }
 
-function AverageTimes({leaderboard}: StatProps) {
-  const list = leaderboard.map(({name, results}) => ({
+function AverageTimes(byPlayer: DataByPlayer) {
+  const list = byPlayer.map(({name, results}) => ({
     name,
     result: results.reduce(
       (sum, {time}) => sum + time,
@@ -164,21 +164,20 @@ function AverageTimes({leaderboard}: StatProps) {
       result: isNaN(result) ? null : secondsToMinutes(result),
     }));
 
-  return <Stat list={list} title="Average Solve Time" />;
+  return list;
 }
 
-function CurrentStreak({leaderboard}: StatProps) {
-  const latestPuzzleDate = getLatestPuzzleDate();
-
-  const list = leaderboard.map(({name, results}) => {
+function CurrentStreak(byPlayer: DataByPlayer, byDate: DataByDate) {
+  const latestPuzzleDate = getLatestPuzzleDate(byDate);
+  const list = byPlayer.map(({name, results}) => {
     let result = 0;
-    let lastDate = getOffsetDate(latestPuzzleDate, -1);
+    let lastDate = getOffsetDate(byDate, latestPuzzleDate, -1);
 
     for (let i = 0; i < results.length; i++) {
-      const {date} = results[i];
+      const { date } = results[i];
       if (date === lastDate || date === latestPuzzleDate) {
         result++;
-        lastDate = getOffsetDate(date, -1);
+        lastDate = getOffsetDate(byDate, date, -1);
       } else {
         break;
       }
@@ -190,11 +189,11 @@ function CurrentStreak({leaderboard}: StatProps) {
     };
   }).sort(compareResultsDescending);
 
-  return <Stat list={list} title="Current Streak" />;
+  return list;
 }
 
-function FastestTimes({leaderboard}: StatProps) {
-  const list = leaderboard.map(({ name, results }) => {
+function FastestTimes(byPlayer: DataByPlayer) {
+  const list = byPlayer.map(({ name, results }) => {
     const r = results.sort((a, b) => (a.time - b.time));
     const fastest: PlayerResult = r.length ? r[0] : { date: "", time: Infinity };
     return {
@@ -206,25 +205,20 @@ function FastestTimes({leaderboard}: StatProps) {
     .map(({name, result, date}) => ({
       name,
       result: isFinite(result) ? secondsToMinutes(result) : null,
-      link: isFinite(result) ? (
-        <Link
-          href="/leaderboard/[date]"
-          as={`/leaderboard/${date}`}
-        >{secondsToMinutes(result)}</Link>
-      ) : null,
+      link: isFinite(result) ? date : null,
     }));
 
-  return <Stat list={list} title="Fastest Solve Time" />;
+  return list;
 }
 
-function MedianRanks({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
+function MedianRanks(byPlayer: DataByPlayer, byDate: DataByDate) {
   const ranks: Map<string, number[]> = new Map();
 
-  for (const {name} of leaderboard) {
+  for (const {name} of byPlayer) {
     ranks.set(name, []);
   }
 
-  for (const {results} of puzzleResults) {
+  for (const {results} of byDate) {
     let lastRank = 0;
     let lastTime;
 
@@ -241,21 +235,21 @@ function MedianRanks({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
 
   const list = Array.from(ranks).map(([name, playerRanks]) => ({
     name,
-    result: playerRanks.sort(
+    result: playerRanks.length ? playerRanks.sort(
       (a, b) => a - b
-    )[Math.floor(playerRanks.length / 2)],
+    )[Math.floor(playerRanks.length / 2)] : NaN,
   })).sort(compareResultsAscending);
 
-  return <Stat list={list} title="Median Rank" />
+  return list;
 }
 
-function LongestStreak({leaderboard}: StatProps) {
-  const latestPuzzleDate = getLatestPuzzleDate();
+function LongestStreak(byPlayer: DataByPlayer, byDate: DataByDate) {
+  const latestPuzzleDate = getLatestPuzzleDate(byDate);
 
-  const list = leaderboard.map(({name, results}) => {
+  const list = byPlayer.map(({name, results}) => {
     let streak = 0;
     let longest = 0;
-    let lastDate = getOffsetDate(latestPuzzleDate, -1);
+    let lastDate = getOffsetDate(byDate, latestPuzzleDate, -1);
 
     for (let i = 0; i < results.length; i++) {
       const {date} = results[i];
@@ -271,7 +265,7 @@ function LongestStreak({leaderboard}: StatProps) {
           break;
         }
       }
-      lastDate = getOffsetDate(date, -1);
+      lastDate = getOffsetDate(byDate, date, -1);
     }
 
     return {
@@ -280,37 +274,32 @@ function LongestStreak({leaderboard}: StatProps) {
     };
   }).sort(compareResultsDescending);
 
-  return <Stat list={list} title="Longest Streak" />;
+  return list;
 }
 
-function MedianTimes({leaderboard}: StatProps) {
-  const list = leaderboard.map(({name, results}) => ({
+function MedianTimes(byPlayer: DataByPlayer) {
+  return byPlayer.map(({name, results}) => ({
     name,
     result: results.sort((a, b) => (
       b.time - a.time
     ))[Math.floor(results.length / 2)]?.time,
-  })).sort(compareResultsAscending)
-    .map(({name, result}) => ({
-      name,
-      result: isNaN(result) ? null : secondsToMinutes(result),
-    }));
-
-  return <Stat list={list} title="Median Solve Time" />;
+  })).sort(compareResultsAscending).map(({name, result}) => ({
+    name,
+    result: isNaN(result) ? null : secondsToMinutes(result),
+  }));
 }
 
-function NumberSolved({leaderboard}: StatProps) {
-  const list = leaderboard.map(({name, results}) => ({
+function NumberSolved(byPlayer: DataByPlayer) {
+  return byPlayer.map(({name, results}) => ({
     name,
     result: results.length,
   })).sort(compareResultsDescending);
-
-  return <Stat list={list} title="Puzzles Solved" />;
 }
 
-function PuzzlesWon({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
+function PuzzlesWon(byPlayer: DataByPlayer, byDate: DataByDate): RankedListItem[] {
   const puzzlesWon = new Map();
 
-  for (const {results} of puzzleResults) {
+  for (const {results} of byDate) {
     const winningTime = results[0].time;
 
     for (const {name, time} of results) {
@@ -326,16 +315,16 @@ function PuzzlesWon({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
     }
   }
 
-  const list = leaderboard.map(({name}) => ({
+  const list = byPlayer.map(({name}) => ({
     name,
     result: puzzlesWon.get(name) ?? 0,
   })).sort(compareResultsDescending);
 
-  return <Stat list={list} title="Puzzles Won" />
+  return list;
 }
 
-function SlowestTimes({leaderboard}: StatProps) {
-  const list = leaderboard.map(({ name, results }) => {
+function SlowestTimes(byPlayer: DataByPlayer) {
+  const list = byPlayer.map(({ name, results }) => {
     const r = results.sort((a, b) => (b.time - a.time));
     const slowest: PlayerResult = r.length ? r[0] : { date: "", time: 0 };
     return {
@@ -347,25 +336,20 @@ function SlowestTimes({leaderboard}: StatProps) {
     .map(({name, result, date}) => ({
       name,
       result: result > 0 ? secondsToMinutes(result) : null,
-      link: result > 0 ? (
-        <Link
-          href="/leaderboard/[date]"
-          as={`/leaderboard/${date}`}
-        >{secondsToMinutes(result)}</Link>
-      ) : null,
+      link: result > 0 ? date : null,
     }));
 
-  return <Stat list={list} title="Slowest Solve Time" />;
+  return list;
 }
 
-function OverallPoints({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
+function OverallPoints(byPlayer: DataByPlayer, byDate: DataByDate) {
   const ranks: Map<string, number[]> = new Map();
 
-  for (const {name} of leaderboard) {
+  for (const {name} of byPlayer) {
     ranks.set(name, []);
   }
 
-  for (const {results} of puzzleResults) {
+  for (const {results} of byDate) {
     let lastRank = 0;
     let lastTime;
     let pointsAwarded = 0
@@ -392,10 +376,10 @@ function OverallPoints({leaderboard, puzzleResults}: PuzzleResultsStatProps) {
     result: points.reduce((a, b) => a + b, 0),
   })).sort(compareResultsDescending);
 
-  return <Stat list={list} title="Overall Points" subTitle="1 point per person outranked"/>
+  return list;
 }
 
-function Pokerstars({ leaderboard, puzzleResults }: PuzzleResultsStatProps) {
+function Pokerstars(byPlayer: DataByPlayer, byDate: DataByDate) {
   /*
   From https://www.pokerstars.com/poker/tournaments/leader-board/explained/ (cached)
   Points = 10 * [sqrt(n)/sqrt(k)] * [1+log(b+0.25)]
@@ -405,7 +389,7 @@ function Pokerstars({ leaderboard, puzzleResults }: PuzzleResultsStatProps) {
   */
   const ranks: Map<string, number> = new Map();
 
-  for (const {results} of puzzleResults) {
+  for (const {results} of byDate) {
     let lastRank = 0;
     let lastTime;
 
@@ -429,66 +413,120 @@ function Pokerstars({ leaderboard, puzzleResults }: PuzzleResultsStatProps) {
     result: result.toFixed(2),
   }));
 
-  return <Stat list={list} title="P* Tournament Points" subTitle="10*sqrt(entrants)/sqrt(rank)*(1 + log(0.25))"/>
+  return list;
 }
 
-interface StatsProps {
-  periodDays: string | undefined;
+interface DataProps {
+  date: string;
+  stats7: Statistics;
+  stats30: Statistics;
+  statsAll: Statistics;
 }
 
-function StatsSection({periodDays}: StatsProps) {
-  let period: Period;
-  if (periodDays != null) {
-    const days = parseInt(periodDays, 10);
-    if (!/^\d+$/.test(periodDays) || isNaN(days) || days <= 0) {
-      return <MessageContainer>Invalid period</MessageContainer>;
-    }
+export const getStaticProps: GetStaticProps = async (context) => {
+  const data = loadData();
+  const date = getLatestPuzzleDate(dataByDate(data));
+  return {
+    props: {
+      date: date,
+      statsAll: generateStats(data),
+      stats30: generateStats(data, 30),
+      stats7: generateStats(data, 7),
+    },
+  }
+}
 
-    const end = getLatestPuzzleDate();
-    period = {
-      start: getOffsetDate(end, 1 - days),
-      end,
-    };
+function serializeLinks(list: RankedListItem[]): RankedListItem[] {
+  return list.map(({ name, result, link }) => ({
+    name: name,
+    result: result,
+    link: link ? <Link
+      href="/leaderboard/[date]"
+      as={`/leaderboard/${link}`}
+    >{result}</Link> : null,
+  }))
+}
+
+interface Statistics {
+  puzzlesWon: RankedListItem[];
+  numberSolved: RankedListItem[];
+  longestStreak: RankedListItem[];
+  currentStreak: RankedListItem[];
+  averageTimes: RankedListItem[];
+  medianTimes: RankedListItem[];
+  fastestTimes: RankedListItem[];
+  slowestTimes: RankedListItem[];
+  averageRanks: RankedListItem[];
+  medianRanks: RankedListItem[];
+  overallPoints: RankedListItem[];
+  pokerstars: RankedListItem[];
+}
+
+function generateStats(byPlayer: DataByPlayer, period?: number): Statistics {
+  let byDate = dataByDate(byPlayer);
+
+  if (period && period > 0) {
+    const date = getLatestPuzzleDate(byDate);
+    byPlayer = dataForPeriod(byPlayer, {
+      start: getOffsetDate(byDate, date, 1 - period),
+      end: date,
+    });
+    byDate = dataByDate(byPlayer);
   }
 
-  const leaderboard = useLeaderboard(period);
-  const puzzleResults = usePuzzleResults(period);
-
-  return (
-    <Container>
-      <PuzzlesWon leaderboard={leaderboard} puzzleResults={puzzleResults} />
-      <NumberSolved leaderboard={leaderboard} />
-      <LongestStreak leaderboard={leaderboard} />
-      <CurrentStreak leaderboard={leaderboard} />
-      <AverageTimes leaderboard={leaderboard} />
-      <MedianTimes leaderboard={leaderboard} />
-      <FastestTimes leaderboard={leaderboard} />
-      <SlowestTimes leaderboard={leaderboard} />
-      <AverageRanks leaderboard={leaderboard} puzzleResults={puzzleResults}/>
-      <MedianRanks leaderboard={leaderboard} puzzleResults={puzzleResults}/>
-      <OverallPoints leaderboard={leaderboard} puzzleResults={puzzleResults} />
-      <Pokerstars leaderboard={leaderboard} puzzleResults={puzzleResults} />
-    </Container>
-  );
+  return {
+    puzzlesWon: PuzzlesWon(byPlayer, byDate),
+    numberSolved: NumberSolved(byPlayer),
+    longestStreak: LongestStreak(byPlayer, byDate),
+    currentStreak: CurrentStreak(byPlayer, byDate),
+    averageTimes: AverageTimes(byPlayer),
+    medianTimes: MedianTimes(byPlayer),
+    fastestTimes: FastestTimes(byPlayer),
+    slowestTimes: SlowestTimes(byPlayer),
+    averageRanks: AverageRanks(byPlayer, byDate),
+    medianRanks: MedianRanks(byPlayer, byDate),
+    overallPoints: OverallPoints(byPlayer, byDate),
+    pokerstars: Pokerstars(byPlayer, byDate),
+  }
 }
 
-function Home() {
-  const {period} = useRouter().query;
-  const periodString = Array.isArray(period) ? period[0] : period;
-  const date = getLatestPuzzleDate();
+export default function Home({ date, statsAll, stats30, stats7 }: DataProps) {
+  const { period } = useRouter().query;
+  const periodDays = Array.isArray(period) ? period[0] : period;
+
+  let s = statsAll;
+  if (periodDays == '7') {
+    s = stats7;
+  } else if (periodDays == '30') {
+    s = stats30;
+  }
 
   return (
     <Layout title="NYT Crossword Stats">
-      {/* <Heading heading="Statistics" subHeading={toReadableDate(date)} /> */}
-      {/* <SubHeading>{toReadableDate(date)}</SubHeading> */}
       <Filters>
-        <PeriodFilter href="/?period=7" isActive={periodString === '7'} title="Last 7 days" />
-        <PeriodFilter href="/?period=30" isActive={periodString === '30'} title="Last 30 days" />
-        <PeriodFilter href="/" isActive={periodString == null} title="All time" />
+        <PeriodFilter href="/?period=7" isActive={s === stats7} title="Last 7 Days" />
+        <PeriodFilter href="/?period=30" isActive={s === stats30} title="Last 30 Days" />
+        <PeriodFilter href="/" isActive={s === statsAll} title="All Time" />
+        <MessageContainer>
+          <DateHeading>
+            as of {toReadableDate(date)}
+          </DateHeading>
+        </MessageContainer>
       </Filters>
-      <StatsSection periodDays={periodString} />
+      <Container>
+        <Stat list={s.puzzlesWon} title="Puzzles Won" />
+        <Stat list={s.numberSolved} title="Puzzles Solved" />
+        <Stat list={s.longestStreak} title="Longest Streak" />
+        <Stat list={s.currentStreak} title="Current Streak" />
+        <Stat list={s.averageTimes} title="Average Solve Time" />
+        <Stat list={s.medianTimes} title="Median Solve Time" />
+        <Stat list={serializeLinks(s.fastestTimes)} title="Fastest Solve Time" />
+        <Stat list={serializeLinks(s.slowestTimes)} title="Slowest Solve Time" />;
+        <Stat list={s.averageRanks} title="Average Rank" />
+        <Stat list={s.medianRanks} title="Median Rank" />
+        <Stat list={s.overallPoints} title="Overall Points" subTitle="1 point per person outranked" />
+        <Stat list={s.pokerstars} title="P* Tournament Points" subTitle="10*sqrt(entrants)/sqrt(rank)*(1 + log(0.25))"/>
+      </Container>
     </Layout>
   );
 }
-
-export default Home;

@@ -1,11 +1,7 @@
 module.exports = {
-  experimental: {
-    modern: true,
-    reactRoot: 'concurrent',
-    reactStrictMode: true,
+  generateBuildId: async () => {
+    return 'latest'
   },
+  staticPageGenerationTimeout: 300,
   trailingSlash: true,
-  typescript: {
-    ignoreDevErrors: true,
-  },
 };

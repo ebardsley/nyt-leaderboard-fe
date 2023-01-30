@@ -1,14 +1,10 @@
 import {format, toDate} from 'date-fns-tz';
 import memoize from 'fast-memoize';
 
-import {useDateOrder} from 'data';
+import {DataByDate, useDateOrder} from 'data';
 
-function formatDate(date: Date): string {
-  return format(date, 'yyyy-MM-dd');
-}
-
-export const getOffsetDate = memoize((dateString: string, offset: number): string => {
-  const order = useDateOrder().dates;
+export const getOffsetDate = memoize((byDate: DataByDate, dateString: string, offset: number): string => {
+  const order = useDateOrder(byDate).dates;
   while (offset != 0) {
     const current = order.get(dateString);
     if (!current) {

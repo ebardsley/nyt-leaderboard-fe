@@ -1,7 +1,5 @@
 import memoize from 'fast-memoize';
 
-import data from './nytxw-combined.json'
-
 interface ObjWithDate {
   date: string;
 }
@@ -9,6 +7,9 @@ interface ObjWithDate {
 function compareDateDescending(a: ObjWithDate, b: ObjWithDate): number {
   return a.date < b.date ? 1 : -1;
 }
+
+export type DataByDate = PuzzleResult[];
+export type DataByPlayer = PlayerResults[];
 
 export type Period = {
   end: string;
@@ -20,26 +21,22 @@ export interface PlayerResults {
   results: PlayerResult[];
 }
 
-export function getFirstPuzzleDate(): string {
-  const results: PuzzleResult[] = usePuzzleResults();
-  if (!results) {
+export function getFirstPuzzleDate(data: DataByDate): string {
+  if (!data) {
     return '';
   }
-  return results.sort(compareDateDescending)[results.length-1].date;
+  return data[data.length-1].date;
 }
 
-export function getLatestPuzzleDate(): string {
-  const results: PuzzleResult[] = usePuzzleResults();
-  if (!results) {
+export function getLatestPuzzleDate(data: DataByDate): string {
+  if (!data) {
     return '';
   }
-  return results.sort(compareDateDescending)[0].date;
+  return data[0].date;
 }
 
-export function useLeaderboard(period?: Period): PlayerResults[] {
-  const leaderboard: PlayerResults[] = data;
-
-  return leaderboard.map(({name, results}) => {
+export function dataForPeriod(data: DataByPlayer, period?: Period): DataByPlayer {
+  return data.map(({name, results}) => {
     const filtered = period ? results.filter(({date}) => (
       date >= period.start && date <= period.end
     )) : results;
@@ -56,29 +53,26 @@ export interface PlayerResult {
   time: number;
 }
 
-interface PuzzleLeaderboardTime {
+export interface PuzzleLeaderboardTime {
   name: string;
   time: number | null;
 }
 
-export function usePuzzleLeaderboard(date: string, period?: Period): PuzzleLeaderboardTime[] {
-  return useLeaderboard(period).map(({name, results}) => ({
-    name,
-    time: results.find(result => result.date === date)?.time ?? null,
-  })).sort((a, b) => {
-    if (a.time === b.time) {
-      return a.name < b.name ? -1 : 1;
-    }
-    if (a.time != null && b.time != null) {
-      return a.time - b.time;
-    }
-    return a.time != null ? -1 : 1;
-  });
+function compareTimeAscending(a: PuzzleLeaderboardTime, b: PuzzleLeaderboardTime): number {
+  if (a.time === b.time) {
+    return a.name < b.name ? -1 : 1;
+  }
+  if (a.time != null && b.time != null) {
+    return a.time - b.time;
+  }
+  return a.time != null ? -1 : 1;
 }
 
-interface PlayerTime {
-  name: string;
-  time: number;
+export function leaderboardForDate(date: string, resultsByPlayer: DataByPlayer): PuzzleLeaderboardTime[] {
+  return resultsByPlayer.map(({name, results}) => ({
+    name,
+    time: results.find(result => result.date === date)?.time ?? null,
+  })).sort(compareTimeAscending);
 }
 
 export interface PuzzleResult {
@@ -86,11 +80,10 @@ export interface PuzzleResult {
   results: PuzzleLeaderboardTime[];
 }
 
+export function dataByDate(data: DataByPlayer): DataByDate {
+  const times: Map<string, PuzzleLeaderboardTime[]> = new Map();
 
-export function usePuzzleResults(period?: Period): PuzzleResult[] {
-  const times: Map<string, PlayerTime[]> = new Map();
-
-  for (const {name, results} of useLeaderboard(period)) {
+  for (const {name, results} of data) {
     for (const {date, time} of results) {
       const playerResults = times.get(date);
       if (playerResults) {
@@ -103,15 +96,11 @@ export function usePuzzleResults(period?: Period): PuzzleResult[] {
 
   return Array.from(times).map(([date, results]) => ({
     date,
-    results: results.sort((a, b) => {
-      if (a.time === b.time) {
-        return a.name < b.name ? -1 : 1;
-      }
-      return a.time - b.time;
-    }),
+    results: results.sort(compareTimeAscending),
   })).sort(compareDateDescending);
 }
 
+/// XXX: dedupe w/ other dateinfo
 interface DateInfo {
   prev: string;
   next: string;
@@ -121,13 +110,12 @@ interface DateOrder {
   dates: Map<string, DateInfo>;
 }
 
-export const useDateOrder = memoize((period?: Period): DateOrder => {
+export const useDateOrder = memoize((byDate: DataByDate): DateOrder => {
   const dates: Map<string, DateInfo> = new Map();
-  const results = usePuzzleResults(period);  // descending order of date
-  for (let i = 0; i < results.length; i++) {
-    dates.set(results[i].date, {
-      next: i > 0 ? results[i - 1].date : "",
-      prev: i < results.length - 1 ? results[i + 1].date : "",
+  for (let i = 0; i < byDate.length; i++) {
+    dates.set(byDate[i].date, {
+      next: i > 0 ? byDate[i - 1].date : "",
+      prev: i < byDate.length - 1 ? byDate[i + 1].date : "",
     })
   }
   return {
