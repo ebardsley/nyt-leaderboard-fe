@@ -13,7 +13,7 @@ import RankedList from 'RankedList';
 import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
 import {
   DataByPlayer, PuzzleLeaderboardTime,
-  getFirstPuzzleDate, getLatestPuzzleDate, leaderboardForDate, dataByDate
+  leaderboardForDate, dataByDate, useDateOrder
 } from 'data';
 import {loadData} from 'static-utils';
 
@@ -96,20 +96,21 @@ export const getStaticProps: GetStaticProps = async (context) => {
 
   const byPlayer: DataByPlayer = loadData();
   const byDate = dataByDate(byPlayer);
+  const dateOrder = useDateOrder(byDate);
   const {date} = context.params;
   let dateString = Array.isArray(date) ? date[0] : date;
 
   if (dateString == "latest") {
-    dateString = getLatestPuzzleDate(byDate);
+    dateString = dateOrder.latest;
   }
 
   return {
     props: {
       date: {
-        first: getFirstPuzzleDate(byDate),
-        previous: getOffsetDate(byDate, dateString, -1),
+        first: dateOrder.first,
+        previous: getOffsetDate(dateOrder, dateString, -1),
         current: dateString,
-        next: getOffsetDate(byDate, dateString, 1),
+        next: getOffsetDate(dateOrder, dateString, 1),
       },
       leaderboard: leaderboardForDate(dateString, byPlayer),
     },

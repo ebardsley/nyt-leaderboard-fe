@@ -1,5 +1,3 @@
-import memoize from 'fast-memoize';
-
 interface ObjWithDate {
   date: string;
 }
@@ -19,13 +17,6 @@ export type Period = {
 export interface PlayerResults {
   name: string;
   results: PlayerResult[];
-}
-
-export function getFirstPuzzleDate(data: DataByDate): string {
-  if (!data) {
-    return '';
-  }
-  return data[data.length-1].date;
 }
 
 export function getLatestPuzzleDate(data: DataByDate): string {
@@ -106,11 +97,13 @@ interface DateInfo {
   next: string;
 }
 
-interface DateOrder {
+export interface DateOrder {
+  first: string;
+  latest: string;
   dates: Map<string, DateInfo>;
 }
 
-export const useDateOrder = memoize((byDate: DataByDate): DateOrder => {
+export function useDateOrder(byDate: DataByDate): DateOrder {
   const dates: Map<string, DateInfo> = new Map();
   for (let i = 0; i < byDate.length; i++) {
     dates.set(byDate[i].date, {
@@ -120,5 +113,7 @@ export const useDateOrder = memoize((byDate: DataByDate): DateOrder => {
   }
   return {
     dates: dates,
+    first: byDate[byDate.length-1].date,
+    latest: byDate[0].date,
   }
-});
+};
