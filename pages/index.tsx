@@ -165,11 +165,11 @@ function AverageTimes(byPlayer: DataByPlayer) {
 function CurrentStreak(byPlayer: DataByPlayer, dateOrder: DateOrder) {
   return byPlayer.map(({name, results}) => {
     let result = 0;
-    let lastDate = getOffsetDate(dateOrder, dateOrder.latest, -1);
+    let lastDate = dateOrder.latest;
 
     for (let i = 0; i < results.length; i++) {
       const { date } = results[i];
-      if (date === lastDate || date === dateOrder.latest) {
+      if (date === lastDate) {
         result++;
         lastDate = getOffsetDate(dateOrder, date, -1);
       } else {
@@ -235,11 +235,11 @@ function LongestStreak(byPlayer: DataByPlayer, dateOrder: DateOrder) {
   return byPlayer.map(({name, results}) => {
     let streak = 0;
     let longest = 0;
-    let lastDate = getOffsetDate(dateOrder, dateOrder.latest, -1);
+    let lastDate = dateOrder.latest;
 
     for (let i = 0; i < results.length; i++) {
       const {date} = results[i];
-      if (date === lastDate || date === dateOrder.latest) {
+      if (date === lastDate) {
         streak++;
       } else {
         if (streak > longest) {
