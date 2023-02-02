@@ -3,15 +3,10 @@
 set -e
 
 cd "$(dirname "$0")"
-if [[ -z "${AGG_ONLY:-}" ]]; then
-  pushd ../nytxw/
-  ./docker-cron.sh
-  popd
-  cp ../nytxw/data/nytxw-combined.json src/
-fi
-
-# Done by docker-cron already.
-#direnv exec . ./aggregate.py ../nyt-leaderboard-fe/src/nytxw-combined.json 'data/**/*.pson'
+pushd ../nytxw/
+  if [[ -z "${AGG_ONLY:-}" ]]; then ./leaderboards.sh; fi
+  direnv exec . ./aggregate.py ../nyt-leaderboard-fe/src/nytxw-combined.json 'data/**/*.pson'
+popd
 
 # To setup fresh node_modules, run the same command w/ "npm install".
 docker run --rm -e NEXT_TELEMETRY_DISABLED=1 \
