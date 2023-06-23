@@ -499,7 +499,7 @@ export default function Home({ date, statsAll, stats30, stats7 }: DataProps) {
         <Stat list={s.averageTimes} title="Average Solve Time" />
         <Stat list={s.medianTimes} title="Median Solve Time" />
         <Stat list={serializeLinks(s.fastestTimes)} title="Fastest Solve Time" />
-        <Stat list={serializeLinks(s.slowestTimes)} title="Slowest Solve Time" />;
+        <Stat list={serializeLinks(s.slowestTimes)} title="Slowest Solve Time" />
         <Stat list={s.averageRanks} title="Average Rank" />
         <Stat list={s.medianRanks} title="Median Rank" />
         <Stat

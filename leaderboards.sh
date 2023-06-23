@@ -14,4 +14,4 @@ docker run --rm -e NEXT_TELEMETRY_DISABLED=1 \
   node:latest \
   npm run build
 
-s3cmd -P -F --delete-removed sync ./out/ s3://nytxw.sigmanuds.org/
+s3cmd -F --delete-removed sync ./out/ s3://nytxw.sigmanuds.org/
