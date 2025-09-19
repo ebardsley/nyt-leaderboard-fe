@@ -1,8 +1,8 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import styled from 'styled-components';
-import {Suspense} from 'react';
-import {useRouter} from 'next/router';
+import { Suspense } from 'react';
+import { useRouter } from 'next/router';
 
 const Button = styled.button`
   background-color: #fff;
@@ -104,7 +104,7 @@ interface StyledLinkProps {
 
 const StyledLink = styled.a<StyledLinkProps>`
   border-bottom: 3px solid;
-  border-bottom-color: ${({isActive}) => isActive ? '#787886' : 'transparent'};
+  border-bottom-color: ${({ isActive }) => isActive ? '#787886' : 'transparent'};
   color: #787886;
   display: inline-block;
   font-size: 12px;
@@ -135,10 +135,10 @@ interface NavLinkProps {
 }
 
 function NavLink(props: NavLinkProps) {
-  const {pathname} = useRouter();
+  const { pathname } = useRouter();
 
   return (
-    <Link href={props.href} as={props.as} passHref>
+    <Link href={props.href} as={props.as} passHref legacyBehavior>
       <StyledLink isActive={pathname === props.href}>
         {props.children}
       </StyledLink>
@@ -162,9 +162,7 @@ function Layout({ children, title }: LayoutProps) {
 
       <Header>
         <Link href="/">
-          <a>
-            <Logo src="/logo.svg" alt="NYT Crossword Stats" />
-          </a>
+          <Logo src="/logo.svg" alt="NYT Crossword Stats" />
         </Link>
         <nav>
           <NavLink href="/">

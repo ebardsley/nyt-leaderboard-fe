@@ -1,13 +1,13 @@
 import { GetStaticProps } from 'next'
 import Link from 'next/link';
 import styled from 'styled-components';
-import {useRouter} from 'next/router';
+import { useRouter } from 'next/router';
 
 import Heading from 'Heading';
-import Layout, {Container, MessageContainer} from 'Layout';
+import Layout, { Container, MessageContainer } from 'Layout';
 import RankedList, { RankedListItem } from 'RankedList';
-import {loadData} from 'static-utils';
-import {getOffsetDate, secondsToMinutes, toReadableDate} from 'utils';
+import { loadData } from 'static-utils';
+import { getOffsetDate, secondsToMinutes, toReadableDate } from 'utils';
 import {
   DataByPlayer, PlayerResult, getLatestPuzzleDate, dataForPeriod, dataByDate, DataByDate, useDateOrder, DateOrder
 } from 'data';
@@ -22,19 +22,19 @@ const DateHeading = styled.h3`
 `;
 
 const Pill = styled.a<PillProps>`
-  background: ${({isActive}) => isActive ? '#000': '#fff'};
-  border: 1px solid ${({isActive}) => isActive ? '#000' : '#ccc'};
+  background: ${({ isActive }) => isActive ? '#000' : '#fff'};
+  border: 1px solid ${({ isActive }) => isActive ? '#000' : '#ccc'};
   border-radius: 50px;
-  color: ${({isActive}) => isActive ? '#fff' : '#000'};
+  color: ${({ isActive }) => isActive ? '#fff' : '#000'};
   display: inline-block;
-  font-weight: ${({isActive}) => isActive ? '700' : '500'};
+  font-weight: ${({ isActive }) => isActive ? '700' : '500'};
   margin: 12px 6px 0;
   padding: 8px 16px;
   text-align: center;
   text-decoration: none;
 
   &:hover {
-    background: ${({isActive}) => isActive ? '#000': '#f4f4f4'};
+    background: ${({ isActive }) => isActive ? '#000' : '#f4f4f4'};
   }
 
   /* Fix pixel shift from bold styling */
@@ -66,9 +66,9 @@ interface PeriodFilterProps {
   title: string;
 }
 
-function PeriodFilter({href, isActive, title}: PeriodFilterProps) {
+function PeriodFilter({ href, isActive, title }: PeriodFilterProps) {
   return (
-    <Link href={href} passHref scroll={false}>
+    <Link href={href} passHref legacyBehavior scroll={false}>
       <Pill isActive={isActive} title={title}>{title}</Pill>
     </Link>
   );
@@ -80,10 +80,10 @@ interface StatContainerProps {
   subTitle?: string;
 }
 
-function Stat({list, title, subTitle}: StatContainerProps) {
+function Stat({ list, title, subTitle }: StatContainerProps) {
   return (
     <StatContainer>
-      <Heading heading={title} subHeading={subTitle}/>
+      <Heading heading={title} subHeading={subTitle} />
       <RankedList list={list} />
     </StatContainer>
   );
@@ -121,16 +121,16 @@ function AverageRanks(byPlayer: DataByPlayer, byDate: DataByDate) {
   const gamesPlayed = new Map();
   const summedRanks = new Map();
 
-  for (const {name} of byPlayer) {
+  for (const { name } of byPlayer) {
     gamesPlayed.set(name, 0);
     summedRanks.set(name, 0);
   }
 
-  for (const {results} of byDate) {
+  for (const { results } of byDate) {
     let lastRank = 0;
     let lastTime;
 
-    for (const {name, time} of results) {
+    for (const { name, time } of results) {
       const rank = time === lastTime ? lastRank : ++lastRank;
       lastTime = time;
 
@@ -143,7 +143,7 @@ function AverageRanks(byPlayer: DataByPlayer, byDate: DataByDate) {
     name,
     result: summedRank / gamesPlayed.get(name),
   })).sort(compareResultsAscending)
-    .map(({name, result}) => ({
+    .map(({ name, result }) => ({
       name,
       result: isNaN(result) ? null : result.toFixed(2),
     }));
@@ -163,7 +163,7 @@ function AverageTimes(byPlayer: DataByPlayer) {
 }
 
 function CurrentStreak(byPlayer: DataByPlayer, dateOrder: DateOrder) {
-  return byPlayer.map(({name, results}) => {
+  return byPlayer.map(({ name, results }) => {
     let result = 0;
     let lastDate = dateOrder.latest;
 
@@ -194,7 +194,7 @@ function FastestTimes(byPlayer: DataByPlayer) {
       date: fastest.date,
     }
   }).sort(compareResultsAscending)
-    .map(({name, result, date}) => ({
+    .map(({ name, result, date }) => ({
       name,
       result: isFinite(result) ? secondsToMinutes(result) : null,
       link: isFinite(result) ? date : null,
@@ -204,15 +204,15 @@ function FastestTimes(byPlayer: DataByPlayer) {
 function MedianRanks(byPlayer: DataByPlayer, byDate: DataByDate) {
   const ranks: Map<string, number[]> = new Map();
 
-  for (const {name} of byPlayer) {
+  for (const { name } of byPlayer) {
     ranks.set(name, []);
   }
 
-  for (const {results} of byDate) {
+  for (const { results } of byDate) {
     let lastRank = 0;
     let lastTime;
 
-    for (const {name, time} of results) {
+    for (const { name, time } of results) {
       const rank = time === lastTime ? lastRank : ++lastRank;
       lastTime = time;
 
@@ -232,13 +232,13 @@ function MedianRanks(byPlayer: DataByPlayer, byDate: DataByDate) {
 }
 
 function LongestStreak(byPlayer: DataByPlayer, dateOrder: DateOrder) {
-  return byPlayer.map(({name, results}) => {
+  return byPlayer.map(({ name, results }) => {
     let streak = 0;
     let longest = 0;
     let lastDate = dateOrder.latest;
 
     for (let i = 0; i < results.length; i++) {
-      const {date} = results[i];
+      const { date } = results[i];
       if (date === lastDate) {
         streak++;
       } else {
@@ -262,20 +262,20 @@ function LongestStreak(byPlayer: DataByPlayer, dateOrder: DateOrder) {
 }
 
 function MedianTimes(byPlayer: DataByPlayer) {
-  return byPlayer.map(({name, results}) => ({
+  return byPlayer.map(({ name, results }) => ({
     name,
     result: results.sort((a, b) => (
       b.time - a.time
     ))[Math.floor(results.length / 2)]?.time,
   })).sort(compareResultsAscending)
-     .map(({ name, result }) => ({
-    name,
-    result: isNaN(result) ? null : secondsToMinutes(result),
-  }));
+    .map(({ name, result }) => ({
+      name,
+      result: isNaN(result) ? null : secondsToMinutes(result),
+    }));
 }
 
 function NumberSolved(byPlayer: DataByPlayer) {
-  return byPlayer.map(({name, results}) => ({
+  return byPlayer.map(({ name, results }) => ({
     name,
     result: results.length,
   })).sort(compareResultsDescending);
@@ -284,10 +284,10 @@ function NumberSolved(byPlayer: DataByPlayer) {
 function PuzzlesWon(byPlayer: DataByPlayer, byDate: DataByDate): RankedListItem[] {
   const puzzlesWon = new Map();
 
-  for (const {results} of byDate) {
+  for (const { results } of byDate) {
     const winningTime = results[0].time;
 
-    for (const {name, time} of results) {
+    for (const { name, time } of results) {
       if (time !== winningTime) {
         break;
       }
@@ -300,7 +300,7 @@ function PuzzlesWon(byPlayer: DataByPlayer, byDate: DataByDate): RankedListItem[
     }
   }
 
-  return byPlayer.map(({name}) => ({
+  return byPlayer.map(({ name }) => ({
     name,
     result: puzzlesWon.get(name) ?? 0,
   })).sort(compareResultsDescending);
@@ -316,7 +316,7 @@ function SlowestTimes(byPlayer: DataByPlayer) {
       date: slowest.date,
     }
   }).sort(compareResultsDescending)
-    .map(({name, result, date}) => ({
+    .map(({ name, result, date }) => ({
       name,
       result: result > 0 ? secondsToMinutes(result) : null,
       link: result > 0 ? date : null,
@@ -326,16 +326,16 @@ function SlowestTimes(byPlayer: DataByPlayer) {
 function OverallPoints(byPlayer: DataByPlayer, byDate: DataByDate) {
   const ranks: Map<string, number[]> = new Map();
 
-  for (const {name} of byPlayer) {
+  for (const { name } of byPlayer) {
     ranks.set(name, []);
   }
 
-  for (const {results} of byDate) {
+  for (const { results } of byDate) {
     let lastTime;
     let pointsAwarded = 0
     let pointsPending = 0;
 
-    for (const {name, time} of results.slice(0).reverse()) {
+    for (const { name, time } of results.slice(0).reverse()) {
       if (time !== lastTime) {
         pointsAwarded += pointsPending;
         pointsPending = 0;
@@ -367,11 +367,11 @@ function Pokerstars(byPlayer: DataByPlayer, byDate: DataByDate) {
   */
   const ranks: Map<string, number> = new Map();
 
-  for (const {results} of byDate) {
+  for (const { results } of byDate) {
     let lastRank = 0;
     let lastTime;
 
-    for (const {name, time} of results) {
+    for (const { name, time } of results) {
       const rank = time === lastTime ? lastRank : ++lastRank;
       lastTime = time;
 
@@ -396,6 +396,7 @@ interface DataProps {
   date: string;
   stats7: Statistics;
   stats30: Statistics;
+  stats365: Statistics;
   statsAll: Statistics;
 }
 
@@ -407,6 +408,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
       date: date,
       statsAll: generateStats(data),
       stats30: generateStats(data, 30),
+      stats365: generateStats(data, 365),
       stats7: generateStats(data, 7),
     },
   }
@@ -468,7 +470,7 @@ function generateStats(byPlayer: DataByPlayer, period?: number): Statistics {
   }
 }
 
-export default function Home({ date, statsAll, stats30, stats7 }: DataProps) {
+export default function Home({ date, statsAll, stats365, stats30, stats7 }: DataProps) {
   const { period } = useRouter().query;
   const periodDays = Array.isArray(period) ? period[0] : period;
 
@@ -477,13 +479,16 @@ export default function Home({ date, statsAll, stats30, stats7 }: DataProps) {
     s = stats7;
   } else if (periodDays == '30') {
     s = stats30;
+  } else if (periodDays == '365') {
+    s = stats365;
   }
 
   return (
     <Layout title="NYT Crossword Stats">
       <Filters>
-        <PeriodFilter href="/?period=7" isActive={s === stats7} title="Last 7 Days" />
-        <PeriodFilter href="/?period=30" isActive={s === stats30} title="Last 30 Days" />
+        <PeriodFilter href="/?period=7" isActive={s === stats7} title="Last Week" />
+        <PeriodFilter href="/?period=30" isActive={s === stats30} title="Last Month" />
+        <PeriodFilter href="/?period=365" isActive={s === stats365} title="Last Year" />
         <PeriodFilter href="/" isActive={s === statsAll} title="All Time" />
         <MessageContainer>
           <DateHeading>
